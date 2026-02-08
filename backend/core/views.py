@@ -47,9 +47,13 @@ class FileUploadView(APIView):
                 # Manage History Limit (Keep last 5)
                 history_count = UploadHistory.objects.count()
                 if history_count >= 5:
-                    # Delete oldest
+                    # Delete oldest entries (both database AND physical files)
                     to_delete = UploadHistory.objects.order_by('uploaded_at')[:history_count - 4]
                     for h in to_delete:
+                        # Delete the physical file from uploads/ folder
+                        if h.file and os.path.exists(h.file.path):
+                            os.remove(h.file.path)
+                        # Delete the database record
                         h.delete()
 
                 # Create History

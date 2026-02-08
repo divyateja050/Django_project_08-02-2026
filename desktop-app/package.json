@@ -1,0 +1,36 @@
+{
+  "name": "chemicalviz-desktop",
+  "version": "1.0.0",
+  "description": "ChemicalViz Desktop Application",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "set NODE_ENV=development&& electron .",
+    "build": "electron-builder"
+  },
+  "keywords": [
+    "chemicalviz",
+    "analytics",
+    "desktop"
+  ],
+  "author": "",
+  "license": "ISC",
+  "build": {
+    "appId": "com.chemicalviz.desktop",
+    "productName": "ChemicalViz",
+    "directories": {
+      "buildResources": "../web-frontend/public"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "../web-frontend/public/chemical_viz_icon.ico"
+    }
+  },
+  "devDependencies": {
+    "electron": "^40.2.1",
+    "electron-icon-builder": "^2.0.1",
+    "png-to-ico": "^3.0.1"
+  }
+}

@@ -25,3 +25,28 @@ body {
 .animate-shimmer {
   animation: shimmer 1.5s infinite;
 }
+
+/* Desktop App Specific Styles */
+body.desktop-app ::-webkit-scrollbar {
+  width: 10px;
+  background: #f1f5f9;
+}
+
+body.desktop-app ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 5px;
+}
+
+body.desktop-app ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Optional: Prevent text selection in UI elements for app-like feel */
+body.desktop-app {
+  user-select: none;
+}
+
+body.desktop-app input,
+body.desktop-app textarea {
+  user-select: text;
+}
