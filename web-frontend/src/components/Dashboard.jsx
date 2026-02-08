@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import HistorySidebar from './HistorySidebar';
 import FileUpload from './FileUpload';
+import { motion } from 'framer-motion';
 import StatsPanel from './StatsPanel';
 import Charts from './Charts';
 import DataTable from './DataTable';
 import api from '../api';
-import { Menu, LogOut, Download, Activity } from 'lucide-react';
+import { Menu, LogOut, Download, Activity, Bell, Settings } from 'lucide-react';
 
 const Dashboard = ({ onLogout }) => {
     const [selectedUploadId, setSelectedUploadId] = useState(null);
@@ -44,36 +45,93 @@ const Dashboard = ({ onLogout }) => {
     return (
         <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
             {/* Sidebar */}
-            <div className={`transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-0'} bg-white border-r border-gray-200 flex-shrink-0 relative`}>
-                <HistorySidebar
-                    onSelectHistory={handleHistorySelect}
-                    refreshTrigger={refreshTrigger}
-                    selectedId={selectedUploadId}
-                />
-            </div>
+            {/* Sidebar */}
+            <motion.div
+                initial={{ width: 280 }}
+                animate={{ width: sidebarOpen ? 280 : 0 }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="bg-[#0F172A] border-r border-slate-800 flex-shrink-0 relative overflow-hidden shadow-2xl z-20"
+            >
+                <div className="w-[280px] h-full flex flex-col">
+                    <HistorySidebar
+                        onSelectHistory={handleHistorySelect}
+                        refreshTrigger={refreshTrigger}
+                        selectedId={selectedUploadId}
+                    />
+                </div>
+            </motion.div>
 
-            <div className="flex-1 flex flex-col h-full w-full overflow-hidden relative">
+            <div className="flex-1 flex flex-col h-full w-full overflow-hidden relative bg-slate-50">
                 {/* Navbar */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-10 flex-shrink-0">
-                    <div className="flex items-center gap-4">
+                <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 flex items-center justify-between px-8 z-10 flex-shrink-0 sticky top-0 shadow-sm transition-all">
+
+                    {/* Left Section: Brand & Navigation */}
+                    <div className="flex items-center gap-6">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors"
+                            className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 hover:text-slate-900 transition-all active:scale-95"
                         >
-                            <Menu size={20} />
+                            <Menu size={22} strokeWidth={2} />
                         </button>
-                        <div className="flex items-center gap-2 text-primary-600">
-                            <Activity className="h-6 w-6" />
-                            <h1 className="text-xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent">Chemical Visualizer</h1>
+
+                        <div className="flex items-center gap-3">
+                            <div className="bg-gradient-to-br from-primary-500 to-teal-500 p-2 rounded-lg shadow-lg shadow-primary-500/20 text-white">
+                                <Activity className="h-5 w-5" />
+                            </div>
+                            <h1 className="text-xl font-display font-bold text-slate-900 tracking-tight hidden md:block">
+                                Chemical<span className="text-primary-600">Viz</span>
+                            </h1>
                         </div>
+
+                        <div className="h-8 w-px bg-slate-200 hidden md:block"></div>
+
+                        <nav className="hidden md:flex items-center gap-2 text-sm font-medium text-slate-500">
+                            <span className="hover:text-slate-900 transition-colors cursor-pointer">Dashboard</span>
+                            <span className="text-slate-300">/</span>
+                            <span className="text-primary-600 bg-primary-50 px-3 py-1 rounded-full text-xs font-bold border border-primary-100">Overview</span>
+                        </nav>
                     </div>
-                    <button
-                        onClick={onLogout}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-gray-200 hover:border-red-200"
-                    >
-                        <LogOut size={16} />
-                        Logout
-                    </button>
+
+                    {/* Right Section: Status, Profile, Actions */}
+                    <div className="flex items-center gap-5">
+
+                        {/* System Status Pill */}
+                        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100/50 shadow-sm">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                            SYSTEM ONLINE
+                        </div>
+
+                        <div className="h-6 w-px bg-slate-200 hidden lg:block"></div>
+
+                        <div className="flex items-center gap-2">
+                            <button className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-all relative">
+                                <Bell size={20} />
+                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                            </button>
+                            <button className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-all">
+                                <Settings size={20} />
+                            </button>
+                        </div>
+
+                        {/* User Profile */}
+                        <div className="flex items-center gap-3 pl-2 border-l border-slate-200 ml-2">
+                            <div className="text-right hidden xl:block">
+                                <div className="text-sm font-bold text-slate-800">Administrator</div>
+                                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Lead Analyst</div>
+                            </div>
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-slate-200 to-slate-100 p-0.5 shadow-inner">
+                                <div className="h-full w-full rounded-full bg-slate-800 flex items-center justify-center text-white font-bold text-sm shadow-md border-2 border-white">AD</div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={onLogout}
+                            className="ml-2 p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
+                            title="Disconnect"
+                        >
+                            <LogOut size={20} />
+                        </button>
+                    </div>
                 </header>
 
                 {/* Main Content */}
