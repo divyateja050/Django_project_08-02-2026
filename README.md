@@ -279,7 +279,7 @@ Compressor-505,Compressor,220.8,45.0,95.3
 
 ### Desktop Application
 
-The desktop experience is **pixel-perfect identical** to the web version:
+The desktop experience is **identical** to the web version but runs in a native window:
 
 - ✅ Same React UI with Tailwind CSS styling
 - ✅ Same authentication and session management
