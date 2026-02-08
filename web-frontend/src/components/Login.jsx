@@ -72,7 +72,7 @@ const Login = ({ onLogin }) => {
 
             {/* Right Column - Login Form */}
             <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-24 bg-[#FAFAF9]">
-                <div className="w-full max-w-sm">
+                <div className="w-full max-w-md bg-white p-10 rounded-2xl shadow-xl border border-gray-100">
                     <div className="mb-10">
                         <h2 className="font-display text-3xl font-bold text-gray-900 mb-2">Sign In</h2>
                         <p className="text-gray-500">Welcome back. Please enter your details.</p>
@@ -83,7 +83,7 @@ const Login = ({ onLogin }) => {
                             <label className="block text-sm font-medium text-gray-700 mb-2 transition-colors group-focus-within:text-primary-700">Username</label>
                             <input
                                 type="text"
-                                className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-200 focus:border-primary-600 focus:outline-none transition-all placeholder-gray-300 text-gray-900"
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-primary-600 focus:ring-2 focus:ring-primary-100 focus:outline-none transition-all placeholder-gray-300 text-gray-900"
                                 placeholder="Enter your ID"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
@@ -94,7 +94,7 @@ const Login = ({ onLogin }) => {
                             <label className="block text-sm font-medium text-gray-700 mb-2 transition-colors group-focus-within:text-primary-700">Password</label>
                             <input
                                 type="password"
-                                className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-200 focus:border-primary-600 focus:outline-none transition-all placeholder-gray-300 text-gray-900"
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-primary-600 focus:ring-2 focus:ring-primary-100 focus:outline-none transition-all placeholder-gray-300 text-gray-900"
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -103,7 +103,7 @@ const Login = ({ onLogin }) => {
 
                         <div className="pt-4">
                             <Button
-                                className="w-full h-12 bg-gray-900 hover:bg-black text-white rounded-none flex items-center justify-center gap-3 transition-all duration-300 group"
+                                className="w-full h-12 bg-gray-900 hover:bg-black text-white rounded-lg flex items-center justify-center gap-3 transition-all duration-300 group shadow-md hover:shadow-lg"
                                 disabled={loading}
                             >
                                 {loading ? 'Processing...' : 'Continue'}
