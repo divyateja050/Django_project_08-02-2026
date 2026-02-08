@@ -1,18 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import HistorySidebar from './HistorySidebar';
 import FileUpload from './FileUpload';
+import ProfileModal from './ProfileModal';
 import { motion } from 'framer-motion';
 import StatsPanel from './StatsPanel';
 import Charts from './Charts';
 import DataTable from './DataTable';
 import api from '../api';
-import { Menu, LogOut, Download, Activity, Bell, Settings } from 'lucide-react';
+import { Menu, LogOut, Download, Activity, Bell, Settings, User, Lock } from 'lucide-react';
 
 const Dashboard = ({ onLogout }) => {
     const [selectedUploadId, setSelectedUploadId] = useState(null);
     const [uploadData, setUploadData] = useState(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [profileOpen, setProfileOpen] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [profileInitialTab, setProfileInitialTab] = useState('profile');
+    const [user, setUser] = useState(() => {
+        const savedUser = localStorage.getItem('user');
+        return savedUser ? JSON.parse(savedUser) : null;
+    });
+
+    const profileRef = useRef(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (profileRef.current && !profileRef.current.contains(event.target)) {
+                setProfileOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     const handleUploadSuccess = (response) => {
         setRefreshTrigger(prev => prev + 1);
@@ -44,6 +68,12 @@ const Dashboard = ({ onLogout }) => {
 
     return (
         <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
+            <ProfileModal
+                isOpen={showProfileModal}
+                onClose={() => setShowProfileModal(false)}
+                defaultTab={profileInitialTab}
+            />
+
             {/* Sidebar */}
             {/* Sidebar */}
             <motion.div
@@ -96,41 +126,79 @@ const Dashboard = ({ onLogout }) => {
                     <div className="flex items-center gap-5">
 
                         {/* System Status Pill */}
-                        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100/50 shadow-sm">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                            SYSTEM ONLINE
-                        </div>
+
 
                         <div className="h-6 w-px bg-slate-200 hidden lg:block"></div>
 
-                        <div className="flex items-center gap-2">
-                            <button className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-all relative">
-                                <Bell size={20} />
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                            </button>
-                            <button className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-all">
-                                <Settings size={20} />
-                            </button>
-                        </div>
 
-                        {/* User Profile */}
-                        <div className="flex items-center gap-3 pl-2 border-l border-slate-200 ml-2">
-                            <div className="text-right hidden xl:block">
-                                <div className="text-sm font-bold text-slate-800">Administrator</div>
-                                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Lead Analyst</div>
-                            </div>
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-slate-200 to-slate-100 p-0.5 shadow-inner">
-                                <div className="h-full w-full rounded-full bg-slate-800 flex items-center justify-center text-white font-bold text-sm shadow-md border-2 border-white">AD</div>
-                            </div>
-                        </div>
 
-                        <button
-                            onClick={onLogout}
-                            className="ml-2 p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
-                            title="Disconnect"
-                        >
-                            <LogOut size={20} />
-                        </button>
+                        {/* User Profile Dropdown */}
+                        <div className="relative ml-2" ref={profileRef}>
+                            <button
+                                onClick={() => setProfileOpen(!profileOpen)}
+                                className="flex items-center gap-3 hover:bg-slate-50 rounded-xl transition-all p-1"
+                            >
+                                <div className="text-right hidden xl:block">
+                                    <div className="text-sm font-bold text-slate-800">
+                                        {user ? user.username : 'Guest User'}
+                                    </div>
+                                    <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                                        {user ? 'Authorized Access' : 'Read Only'}
+                                    </div>
+                                </div>
+                                <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-primary-100 to-slate-100 p-0.5 shadow-inner relative group">
+                                    <div className="h-full w-full rounded-full bg-slate-800 flex items-center justify-center text-white font-bold text-sm shadow-md border-2 border-white group-hover:bg-primary-600 transition-colors">
+                                        {user ? user.username.substring(0, 2).toUpperCase() : 'GU'}
+                                    </div>
+                                    <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-white rounded-full"></div>
+                                </div>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {profileOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50"
+                                >
+                                    <div className="p-4 border-b border-slate-50 bg-slate-50/50">
+                                        <p className="text-sm font-bold text-slate-800">Signed in as</p>
+                                        <p className="text-xs text-slate-500 truncate">{user?.username || 'Guest'}</p>
+                                    </div>
+                                    <div className="p-2">
+                                        <button
+                                            onClick={() => {
+                                                setProfileInitialTab('profile');
+                                                setShowProfileModal(true);
+                                                setProfileOpen(false);
+                                            }}
+                                            className="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-primary-600 rounded-lg transition-colors"
+                                        >
+                                            <User size={16} /> My Profile
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setProfileInitialTab('security');
+                                                setShowProfileModal(true);
+                                                setProfileOpen(false);
+                                            }}
+                                            className="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-primary-600 rounded-lg transition-colors"
+                                        >
+                                            <Lock size={16} /> Security
+                                        </button>
+                                        <div className="h-px bg-slate-100 my-1"></div>
+                                        <button
+                                            onClick={onLogout}
+                                            className="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        >
+                                            <LogOut size={16} /> Sign Out
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </div>
                     </div>
                 </header>
 

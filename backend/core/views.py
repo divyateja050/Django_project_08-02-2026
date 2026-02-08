@@ -157,3 +157,61 @@ class PDFReportView(APIView):
             return response
         except UploadHistory.DoesNotExist:
             return Response({"error": "Upload not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class UserDetailsView(APIView):
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return Response({"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        user = request.user
+        return Response({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "date_joined": user.date_joined
+        })
+
+    def put(self, request):
+        if not request.user.is_authenticated:
+            return Response({"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        user = request.user
+        data = request.data
+        
+        user.first_name = data.get("first_name", user.first_name)
+        user.last_name = data.get("last_name", user.last_name)
+        user.email = data.get("email", user.email)
+        user.save()
+        
+        return Response({
+            "message": "Profile updated successfully",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name
+            }
+        })
+
+class ChangePasswordView(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated:
+            return Response({"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        user = request.user
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
+        
+        if not user.check_password(old_password):
+            return Response({"error": "Incorrect old password"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.set_password(new_password)
+        user.save()
+        
+        # Keep user logged in if using session auth, but we use Basic/Token usually.
+        # For Basic Auth, the client needs to update the stored credentials.
+        
+        return Response({"message": "Password changed successfully"})
