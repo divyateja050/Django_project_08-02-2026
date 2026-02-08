@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import api from '../api';
 import { motion } from 'framer-motion';
-import { TestTube, Gauge, Activity, ArrowRight, Lock, User } from 'lucide-react';
+import { ArrowRight, Hexagon, Database, Activity } from 'lucide-react';
+import { Button } from './ui/Button';
 
 const Login = ({ onLogin }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [focusedField, setFocusedField] = useState(null);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -30,116 +30,105 @@ const Login = ({ onLogin }) => {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center bg-[#0a0a0a] relative overflow-hidden font-sans">
-            {/* Dynamic Background */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <motion.div
-                    animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-r from-violet-600/30 to-indigo-600/30 blur-[100px]"
-                />
-                <motion.div
-                    animate={{ rotate: -360, scale: [1, 1.5, 1] }}
-                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                    className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-r from-blue-600/20 to-cyan-600/20 blur-[120px]"
-                />
+        <div className="min-h-screen w-full flex bg-[#FAFAF9] font-sans">
+            {/* Left Column - Artistic/Brand Section */}
+            <div className="hidden lg:flex w-1/2 bg-[#1e1e1e] relative flex-col justify-between p-12 overflow-hidden text-white">
+                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_50%,#333,transparent_70%)]"></div>
+
+                {/* Abstract Geometric Pattern */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] opacity-10 pointer-events-none">
+                    <svg viewBox="0 0 100 100" className="w-full h-full stroke-white" strokeWidth="0.1" fill="none">
+                        <circle cx="50" cy="50" r="40" />
+                        <circle cx="50" cy="50" r="30" />
+                        <circle cx="50" cy="50" r="20" />
+                        <line x1="10" y1="50" x2="90" y2="50" />
+                        <line x1="50" y1="10" x2="50" y2="90" />
+                    </svg>
+                </div>
+
+                <div className="relative z-10 flex items-center gap-2">
+                    <Hexagon className="text-primary-400" size={32} strokeWidth={2} />
+                    <span className="font-display font-bold text-xl tracking-wide">CHEM.VIZ</span>
+                </div>
+
+                <div className="relative z-10 max-w-lg">
+                    <h1 className="font-display text-5xl font-light leading-tight mb-6">
+                        Precision Analytics for <br />
+                        <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-200 to-teal-500">
+                            Modern Industry.
+                        </span>
+                    </h1>
+                    <p className="text-gray-400 text-lg leading-relaxed">
+                        Visualize flow rates, pressure anomalies, and thermal dynamics in real-time.
+                        Designed for engineers who demand clarity.
+                    </p>
+                </div>
+
+                <div className="relative z-10 flex items-center gap-6 text-sm font-medium text-gray-500">
+                    <span className="flex items-center gap-2"> <Database size={16} /> Data-Driven </span>
+                    <span className="flex items-center gap-2"> <Activity size={16} /> Real-Time </span>
+                </div>
             </div>
 
-            <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                className="w-full max-w-md relative z-10"
-            >
-                {/* 3D Glass Card */}
-                <div className="relative group perspective-1000">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl blur opacity-30 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-                    <div className="relative p-8 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl">
+            {/* Right Column - Login Form */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-24 bg-[#FAFAF9]">
+                <div className="w-full max-w-sm">
+                    <div className="mb-10">
+                        <h2 className="font-display text-3xl font-bold text-gray-900 mb-2">Sign In</h2>
+                        <p className="text-gray-500">Welcome back. Please enter your details.</p>
+                    </div>
 
-                        {/* Header */}
-                        <div className="text-center mb-8">
-                            <motion.div
-                                className="flex justify-center gap-4 mb-4"
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
-                            >
-                                {[TestTube, Gauge, Activity].map((Icon, i) => (
-                                    <div key={i} className="p-3 bg-white/5 rounded-xl border border-white/10 text-violet-400 shadow-inner">
-                                        <Icon size={24} />
-                                    </div>
-                                ))}
-                            </motion.div>
-                            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 mb-2">
-                                Welcome Back
-                            </h2>
-                            <p className="text-gray-400 text-sm">Enter your credentials to access the nexus.</p>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="group">
+                            <label className="block text-sm font-medium text-gray-700 mb-2 transition-colors group-focus-within:text-primary-700">Username</label>
+                            <input
+                                type="text"
+                                className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-200 focus:border-primary-600 focus:outline-none transition-all placeholder-gray-300 text-gray-900"
+                                placeholder="Enter your ID"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                            />
                         </div>
 
-                        {/* Form */}
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="group">
+                            <label className="block text-sm font-medium text-gray-700 mb-2 transition-colors group-focus-within:text-primary-700">Password</label>
+                            <input
+                                type="password"
+                                className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-200 focus:border-primary-600 focus:outline-none transition-all placeholder-gray-300 text-gray-900"
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                        </div>
 
-                            {/* Username Field */}
-                            <div className="relative">
-                                <User className={`absolute left-3 top-3.5 h-5 w-5 transition-colors ${focusedField === 'username' ? 'text-violet-400' : 'text-gray-500'}`} />
-                                <input
-                                    type="text"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-10 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all"
-                                    placeholder="Username"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    onFocus={() => setFocusedField('username')}
-                                    onBlur={() => setFocusedField(null)}
-                                />
-                            </div>
-
-                            {/* Password Field */}
-                            <div className="relative">
-                                <Lock className={`absolute left-3 top-3.5 h-5 w-5 transition-colors ${focusedField === 'password' ? 'text-violet-400' : 'text-gray-500'}`} />
-                                <input
-                                    type="password"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-10 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all"
-                                    placeholder="Password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    onFocus={() => setFocusedField('password')}
-                                    onBlur={() => setFocusedField(null)}
-                                />
-                            </div>
-
-                            {/* Submit Button */}
-                            <motion.button
-                                whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(124, 58, 237, 0.5)" }}
-                                whileTap={{ scale: 0.98 }}
+                        <div className="pt-4">
+                            <Button
+                                className="w-full h-12 bg-gray-900 hover:bg-black text-white rounded-none flex items-center justify-center gap-3 transition-all duration-300 group"
                                 disabled={loading}
-                                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold py-3.5 rounded-xl shadow-lg border border-white/20 relative overflow-hidden group"
                             >
-                                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                                <span className="flex items-center justify-center gap-2">
-                                    {loading ? 'Authenticating...' : 'Access Dashboard'}
-                                    {!loading && <ArrowRight size={18} />}
-                                </span>
-                            </motion.button>
-                        </form>
+                                {loading ? 'Processing...' : 'Continue'}
+                                {!loading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
+                            </Button>
+                        </div>
 
-                        {/* Error Message */}
                         {error && (
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center"
+                                className="text-red-500 text-sm mt-4 font-medium"
                             >
                                 {error}
                             </motion.div>
                         )}
+                    </form>
+
+                    <div className="mt-12 pt-6 border-t border-gray-200">
+                        <p className="text-xs text-gray-400 text-center">
+                            By accessing this system, you agree to the <a href="#" className="underline hover:text-gray-600">Terms of Service</a>.
+                        </p>
                     </div>
                 </div>
-
-                {/* Footer */}
-                <p className="text-center text-gray-600 text-xs mt-8">
-                    &copy; 2026 Chemical Visualizer Pro. All rights reserved.
-                </p>
-            </motion.div>
+            </div>
         </div>
     );
 };
