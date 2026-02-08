@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 from django.db import transaction, models
+from django.http import HttpResponse
 from .models import UploadHistory, EquipmentData
 from .serializers import UploadHistorySerializer, EquipmentDataSerializer
 import os
@@ -117,46 +118,131 @@ class UploadDataView(APIView):
         except UploadHistory.DoesNotExist:
              return Response({"error": "Upload not found"}, status=status.HTTP_404_NOT_FOUND)
 
-from reportlab.pdfgen import canvas
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from django.http import HttpResponse
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
 class PDFReportView(APIView):
     def get(self, request, upload_id):
         try:
-            upload = UploadHistory.objects.get(id=upload_id)
+            try:
+                upload = UploadHistory.objects.get(id=upload_id)
+            except UploadHistory.DoesNotExist:
+                return Response({"error": "Upload not found"}, status=status.HTTP_404_NOT_FOUND)
+
             data = upload.equipment_data.all()
             
             response = HttpResponse(content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="report_{upload_id}.pdf"'
+            filename = f"Report_{upload.filename}_{upload.uploaded_at.strftime('%Y%m%d')}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+            doc = SimpleDocTemplate(response, pagesize=letter)
+            elements = []
+            styles = getSampleStyleSheet()
             
-            p = canvas.Canvas(response, pagesize=letter)
-            p.drawString(100, 750, f"Equipment Data Report - {upload.filename}")
-            p.drawString(100, 730, f"Uploaded at: {upload.uploaded_at}")
+            # --- Styles ---
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Heading1'],
+                fontSize=24,
+                leading=28,
+                spaceAfter=10,
+                textColor=colors.HexColor('#0f766e'), # Teal-700
+                alignment=TA_CENTER
+            )
+            subtitle_style = ParagraphStyle(
+                'CustomSubtitle',
+                parent=styles['Normal'],
+                fontSize=12,
+                textColor=colors.HexColor('#64748b'), # Slate-500
+                alignment=TA_CENTER,
+                spaceAfter=30
+            )
             
-            y = 700
-            p.drawString(80, y, "Name")
-            p.drawString(200, y, "Type")
-            p.drawString(300, y, "Flowrate")
-            p.drawString(400, y, "Pressure")
-            p.drawString(500, y, "Temp")
-            y -= 20
+            # --- Header ---
+            elements.append(Paragraph("Chem.Viz Analytics Report", title_style))
+            elements.append(Paragraph(f"File: {upload.filename} | Generated: {upload.uploaded_at.strftime('%Y-%m-%d %H:%M')}", subtitle_style))
+            elements.append(Spacer(1, 0.2 * inch))
+
+            # --- Summary Section ---
+            total_count = data.count()
+            avg_flow = data.aggregate(models.Avg('flowrate'))['flowrate__avg'] or 0
+            avg_press = data.aggregate(models.Avg('pressure'))['pressure__avg'] or 0
+            avg_temp = data.aggregate(models.Avg('temperature'))['temperature__avg'] or 0
             
+            summary_data = [
+                ['Total Records', 'Avg Flowrate', 'Avg Pressure', 'Avg Temp'],
+                [str(total_count), f"{avg_flow:.2f}", f"{avg_press:.2f}", f"{avg_temp:.2f}"]
+            ]
+            
+            # FIT TO PAGE: 8.5 width - 2 inch margins = 6.5 inch max
+            # Summary: 1.5 * 4 = 6.0 inches
+            t_summary = Table(summary_data, colWidths=[1.5*inch, 1.5*inch, 1.5*inch, 1.5*inch])
+            t_summary.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0fdfa')), # Teal-50
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#0f766e')), # Teal-700
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('TOPPADDING', (0, 0), (-1, 0), 8),
+                ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#ccfbf1')), # Teal-100
+                ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#0d9488')), # Teal-600
+                ('ROUNDEDCORNERS', [10, 10, 10, 10])
+            ]))
+            elements.append(t_summary)
+            elements.append(Spacer(1, 0.5 * inch))
+
+            # --- Main Data Table ---
+            table_data = [['Equipment Name', 'Type', 'Flowrate', 'Pressure', 'Temp']]
+            
+            # Limit rows for PDF performance if needed, or implement pagination (SimpleDocTemplate handles pagination automatically)
             for item in data:
-                if y < 50:
-                    p.showPage()
-                    y = 750
-                p.drawString(80, y, str(item.equipment_name)[:20])
-                p.drawString(200, y, str(item.equipment_type))
-                p.drawString(300, y, str(item.flowrate))
-                p.drawString(400, y, str(item.pressure))
-                p.drawString(500, y, str(item.temperature))
-                y -= 15
-                
-            p.save()
+                table_data.append([
+                    str(item.equipment_name)[:30], # Truncate long names
+                    str(item.equipment_type),
+                    f"{item.flowrate:.2f}",
+                    f"{item.pressure:.2f}",
+                    f"{item.temperature:.2f}"
+                ])
+
+            # FIT TO PAGE: 2.0 + 1.2 + 1.0 + 1.0 + 1.0 = 6.2 inches
+            t = Table(table_data, colWidths=[2.0*inch, 1.2*inch, 1*inch, 1*inch, 1*inch], repeatRows=1)
+            t.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0f766e')), # Teal-700 Header
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('ALIGN', (0, 1), (0, -1), 'LEFT'), # Left align names
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+                ('TOPPADDING', (0, 0), (-1, 0), 10),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')), # Slate-200
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]) # Zebra striping (Slate-50)
+            ]))
+            
+            elements.append(t)
+            
+            # Build PDF
+            def add_footer(canvas, doc):
+                canvas.saveState()
+                canvas.setFont('Helvetica', 9)
+                canvas.drawString(inch, 0.75 * inch, f"Page {doc.page}")
+                canvas.drawRightString(7.5 * inch, 0.75 * inch, "Chem.Viz Automated Report")
+                canvas.restoreState()
+
+            doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
             return response
-        except UploadHistory.DoesNotExist:
-            return Response({"error": "Upload not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            print(f"PDF GENERATION ERROR: {tb}")
+            return Response({"error": f"PDF Generation Error: {str(e)}", "traceback": tb}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UserDetailsView(APIView):
     def get(self, request):

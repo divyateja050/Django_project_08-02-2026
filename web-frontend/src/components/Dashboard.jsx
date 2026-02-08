@@ -7,6 +7,7 @@ import StatsPanel from './StatsPanel';
 import Charts from './Charts';
 import DataTable from './DataTable';
 import api from '../api';
+import { toast } from 'react-hot-toast'; // Import toast
 import { Menu, LogOut, Download, Activity, Bell, Settings, User, Lock } from 'lucide-react';
 
 const Dashboard = ({ onLogout }) => {
@@ -60,9 +61,40 @@ const Dashboard = ({ onLogout }) => {
         }
     };
 
-    const handleDownloadPDF = () => {
-        if (selectedUploadId) {
-            window.open(`http://localhost:8000/api/report/${selectedUploadId}/`, '_blank');
+    // Removed handleDownloadPDF and added handleDownloadReport
+    const handleDownloadReport = async () => {
+        if (!selectedUploadId) {
+            toast.error("No report selected");
+            return;
+        }
+
+        const loadingToast = toast.loading("Generating PDF Report...");
+
+        try {
+            // Using API call to get blob and download
+            const response = await api.get(`report/${selectedUploadId}/`, {
+                responseType: 'blob',
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            const contentDisposition = response.headers['content-disposition'];
+            let fileName = `report_${selectedUploadId}.pdf`;
+            if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename="?(.+)"?/);
+                if (fileNameMatch.length === 2)
+                    fileName = fileNameMatch[1];
+            }
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            toast.success('Report downloaded successfully', { id: loadingToast });
+        } catch (error) {
+            console.error("Download failed", error);
+            // toast.error("Failed to download report"); // toast.error hides loading too fast sometimes if sharing ID, better to update loading toast
+            toast.error("Failed to download report", { id: loadingToast });
         }
     };
 
@@ -222,7 +254,7 @@ const Dashboard = ({ onLogout }) => {
                                         </p>
                                     </div>
                                     <button
-                                        onClick={handleDownloadPDF}
+                                        onClick={handleDownloadReport}
                                         className="flex items-center gap-2 bg-green-600 text-white px-5 py-2.5 rounded-lg hover:bg-green-700 shadow-md shadow-green-600/20 active:scale-95 transition-all text-sm font-medium"
                                     >
                                         <Download size={18} />
