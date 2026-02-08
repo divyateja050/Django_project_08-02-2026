@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Lock, Mail, Save, Key, Fingerprint, BadgeCheck, Settings, Bell, Moon } from 'lucide-react';
+import { X, User, Lock, Mail, Save, Key, Settings, Bell, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/Button';
 import api from '../api';
+import { toast } from 'react-hot-toast';
 
 const ProfileModal = ({ isOpen, onClose, defaultTab = 'profile' }) => {
     const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'security'
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState({ type: '', text: '' });
 
     const [profileData, setProfileData] = useState({
         username: '',
@@ -28,7 +28,6 @@ const ProfileModal = ({ isOpen, onClose, defaultTab = 'profile' }) => {
         if (isOpen) {
             setActiveTab(defaultTab);
             fetchUserDetails();
-            setMessage({ type: '', text: '' });
             setPasswordData({ old_password: '', new_password: '', confirm_password: '' });
         }
     }, [isOpen, defaultTab]);
@@ -50,7 +49,6 @@ const ProfileModal = ({ isOpen, onClose, defaultTab = 'profile' }) => {
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setMessage({ type: '', text: '' });
 
         try {
             const response = await api.put('user/details/', {
@@ -58,14 +56,14 @@ const ProfileModal = ({ isOpen, onClose, defaultTab = 'profile' }) => {
                 last_name: profileData.last_name,
                 email: profileData.email
             });
-            setMessage({ type: 'success', text: 'Profile updated successfully' });
+            toast.success('Profile updated successfully');
 
             // Update local storage to reflect changes immediately if needed
             const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
             localStorage.setItem('user', JSON.stringify({ ...currentUser, ...response.data.user }));
 
         } catch (error) {
-            setMessage({ type: 'error', text: 'Failed to update profile' });
+            toast.error('Failed to update profile');
         } finally {
             setLoading(false);
         }
@@ -74,22 +72,21 @@ const ProfileModal = ({ isOpen, onClose, defaultTab = 'profile' }) => {
     const handlePasswordChange = async (e) => {
         e.preventDefault();
         if (passwordData.new_password !== passwordData.confirm_password) {
-            setMessage({ type: 'error', text: 'New passwords do not match' });
+            toast.error('New passwords do not match');
             return;
         }
 
         setLoading(true);
-        setMessage({ type: '', text: '' });
 
         try {
             await api.post('user/password/', {
                 old_password: passwordData.old_password,
                 new_password: passwordData.new_password
             });
-            setMessage({ type: 'success', text: 'Password changed successfully' });
+            toast.success('Password changed successfully');
             setPasswordData({ old_password: '', new_password: '', confirm_password: '' });
         } catch (error) {
-            setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to change password' });
+            toast.error(error.response?.data?.error || 'Failed to change password');
         } finally {
             setLoading(false);
         }
@@ -136,13 +133,6 @@ const ProfileModal = ({ isOpen, onClose, defaultTab = 'profile' }) => {
 
                         {/* Content Area */}
                         <div className="flex-1 p-6 overflow-y-auto">
-                            {message.text && (
-                                <div className={`mb-6 p-4 rounded-xl text-sm font-medium flex items-center gap-2 ${message.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                                    {message.type === 'success' ? <BadgeCheck size={18} /> : <Fingerprint size={18} />}
-                                    {message.text}
-                                </div>
-                            )}
-
                             {activeTab === 'profile' ? (
                                 <form onSubmit={handleProfileUpdate} className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

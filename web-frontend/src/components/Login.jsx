@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-hot-toast';
 import api from '../api';
 import { motion } from 'framer-motion';
 import { ArrowRight, Hexagon, Database, Activity } from 'lucide-react';
@@ -21,8 +22,10 @@ const Login = ({ onLogin }) => {
                 headers: { Authorization: `Basic ${token}` }
             });
             localStorage.setItem('user', JSON.stringify({ username, password }));
+            toast.success(`Welcome back, ${username}!`);
             onLogin();
         } catch (err) {
+            toast.error('Invalid credentials. Please try again.');
             setError('Invalid credentials');
         } finally {
             setLoading(false);
@@ -114,15 +117,7 @@ const Login = ({ onLogin }) => {
                             </Button>
                         </div>
 
-                        {error && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="text-red-500 text-sm mt-4 font-medium"
-                            >
-                                {error}
-                            </motion.div>
-                        )}
+
                     </form>
 
                     <div className="mt-12 pt-6 border-t border-gray-200">

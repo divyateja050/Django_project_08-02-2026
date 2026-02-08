@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 import api from '../api';
 import { UploadCloud, File, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Card } from './ui/Card';
@@ -6,7 +7,6 @@ import { Button } from './ui/Button';
 
 const FileUpload = ({ onUploadSuccess }) => {
     const [file, setFile] = useState(null);
-    const [message, setMessage] = useState('');
     const [uploading, setUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const inputRef = useRef(null);
@@ -41,17 +41,18 @@ const FileUpload = ({ onUploadSuccess }) => {
         const formData = new FormData();
         formData.append('file', file);
         setUploading(true);
-        setMessage('');
+
+        const loadingToast = toast.loading('Uploading analysis...');
 
         try {
             const response = await api.post('upload/', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
-            setMessage('Upload successful!');
+            toast.success('Upload successful!', { id: loadingToast });
             setFile(null); // Reset file after success
             onUploadSuccess(response.data);
         } catch (error) {
-            setMessage('Upload failed. Please try again.');
+            toast.error('Upload failed. Please try again.', { id: loadingToast });
         } finally {
             setUploading(false);
         }
@@ -134,15 +135,7 @@ const FileUpload = ({ onUploadSuccess }) => {
                 </div>
             </div>
 
-            {message && (
-                <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 text-sm ${message.includes('success')
-                    ? 'bg-green-50 text-green-700 border border-green-100'
-                    : 'bg-red-50 text-red-700 border border-red-100'
-                    }`}>
-                    {message.includes('success') ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-                    {message}
-                </div>
-            )}
+
         </div>
     );
 };
