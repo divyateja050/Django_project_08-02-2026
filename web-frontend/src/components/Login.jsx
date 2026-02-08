@@ -30,9 +30,9 @@ const Login = ({ onLogin }) => {
     };
 
     return (
-        <div className="min-h-screen w-full flex bg-[#FAFAF9] font-sans">
+        <div className="h-screen w-full flex bg-[#1e1e1e] font-sans overflow-hidden">
             {/* Left Column - Artistic/Brand Section */}
-            <div className="hidden lg:flex w-1/2 bg-[#1e1e1e] relative flex-col justify-between p-12 overflow-hidden text-white">
+            <div className="hidden lg:flex w-1/2 relative flex-col justify-between p-12 overflow-hidden text-white">
                 <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_50%,#333,transparent_70%)]"></div>
 
                 {/* Abstract Geometric Pattern */}
@@ -71,8 +71,11 @@ const Login = ({ onLogin }) => {
             </div>
 
             {/* Right Column - Login Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-24 bg-[#FAFAF9]">
-                <div className="w-full max-w-md bg-white p-10 rounded-2xl shadow-xl border border-gray-100">
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-24 relative">
+                {/* Right Side texture matching left */}
+                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_70%_50%,#333,transparent_70%)] pointer-events-none"></div>
+
+                <div className="w-full max-w-md bg-white p-10 rounded-2xl shadow-2xl border border-gray-100 relative z-10">
                     <div className="mb-10">
                         <h2 className="font-display text-3xl font-bold text-gray-900 mb-2">Sign In</h2>
                         <p className="text-gray-500">Welcome back. Please enter your details.</p>
