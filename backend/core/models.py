@@ -12,11 +12,11 @@ class UploadHistory(models.Model):
 
 class EquipmentData(models.Model):
     upload = models.ForeignKey(UploadHistory, on_delete=models.CASCADE, related_name='equipment_data')
-    equipment_name = models.CharField(max_length=255)
-    equipment_type = models.CharField(max_length=100)
-    flowrate = models.FloatField()
-    pressure = models.FloatField()
-    temperature = models.FloatField()
+    equipment_name = models.CharField(max_length=255, null=True, blank=True)
+    equipment_type = models.CharField(max_length=100, null=True, blank=True)
+    flowrate = models.FloatField(null=True, blank=True)
+    pressure = models.FloatField(null=True, blank=True)
+    temperature = models.FloatField(null=True, blank=True)
 
     def __str__(self):
         return self.equipment_name

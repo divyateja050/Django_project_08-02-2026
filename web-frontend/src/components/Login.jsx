@@ -50,7 +50,7 @@ const Login = ({ onLogin }) => {
                 </div>
 
                 <div className="relative z-10 flex items-center gap-2">
-                    <Hexagon className="text-primary-400" size={32} strokeWidth={2} />
+                    <img src="/chemical_viz_icon.svg" alt="Logo" className="w-10 h-10 bg-white rounded-xl p-1.5 shadow-lg hover:rotate-12 transition-transform duration-500" />
                     <span className="font-display font-bold text-xl tracking-wide">CHEM.VIZ</span>
                 </div>
 

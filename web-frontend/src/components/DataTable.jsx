@@ -22,27 +22,41 @@ const DataTable = ({ data }) => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {data.map((item, index) => (
-                            <tr key={index} className="hover:bg-blue-50/50 transition-colors duration-150">
-                                <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                                    {item.equipment_name}
-                                </td>
-                                <td className="px-5 py-4 text-sm">
-                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                        {item.equipment_type}
-                                    </span>
-                                </td>
-                                <td className="px-5 py-4 text-sm text-gray-600 font-mono">
-                                    {item.flowrate}
-                                </td>
-                                <td className="px-5 py-4 text-sm text-gray-600 font-mono">
-                                    {item.pressure}
-                                </td>
-                                <td className="px-5 py-4 text-sm text-gray-600 font-mono">
-                                    {item.temperature}
-                                </td>
-                            </tr>
-                        ))}
+                        {data.map((item, index) => {
+                            // Fix: Do NOT use Number.isNaN(Number(val)) as it converts valid strings ("Pump") to NaN
+                            const isNullOrNan = (val) => val == null || String(val).toLowerCase() === 'nan';
+                            const hasNull = isNullOrNan(item.equipment_name) || isNullOrNan(item.equipment_type) || isNullOrNan(item.flowrate) || isNullOrNan(item.pressure) || isNullOrNan(item.temperature);
+
+                            const rowClass = hasNull
+                                ? "bg-red-50 hover:bg-red-100 transition-colors duration-150 border-l-4 border-red-400"
+                                : "hover:bg-blue-50/50 transition-colors duration-150";
+
+                            return (
+                                <tr key={index} className={rowClass}>
+                                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                                        {!isNullOrNan(item.equipment_name) ? item.equipment_name : <span className="text-red-500 italic font-semibold">N/A</span>}
+                                    </td>
+                                    <td className="px-5 py-4 text-sm">
+                                        {!isNullOrNan(item.equipment_type) ? (
+                                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                {item.equipment_type}
+                                            </span>
+                                        ) : (
+                                            <span className="text-red-500 italic font-semibold">N/A</span>
+                                        )}
+                                    </td>
+                                    <td className="px-5 py-4 text-sm text-gray-600 font-mono">
+                                        {!isNullOrNan(item.flowrate) ? item.flowrate : <span className="text-red-500 italic font-semibold">N/A</span>}
+                                    </td>
+                                    <td className="px-5 py-4 text-sm text-gray-600 font-mono">
+                                        {!isNullOrNan(item.pressure) ? item.pressure : <span className="text-red-500 italic font-semibold">N/A</span>}
+                                    </td>
+                                    <td className="px-5 py-4 text-sm text-gray-600 font-mono">
+                                        {!isNullOrNan(item.temperature) ? item.temperature : <span className="text-red-500 italic font-semibold">N/A</span>}
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

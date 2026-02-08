@@ -22,11 +22,32 @@ ChartJS.register(
     ArcElement
 );
 
-const Charts = ({ summary }) => {
-    if (!summary) return null;
+const Charts = ({ summary, data }) => {
+    // If we have raw data, we can calculate more accurate distribution
+    // that EXPLICITLY excludes nulls, matching our table logic.
+    let type_distribution = summary ? summary.type_distribution : {};
 
-    const { type_distribution } = summary;
-    const labels = Object.keys(type_distribution);
+    if (data && data.length > 0) {
+        // Recalculate based on non-null rows
+        const cleanData = data.filter(item => {
+            const isNullOrNan = (val) => val == null || String(val).toLowerCase() === 'nan';
+            // If ANY field is null/nan, exclude row
+            return !(isNullOrNan(item.equipment_name) || isNullOrNan(item.equipment_type) || isNullOrNan(item.flowrate) || isNullOrNan(item.pressure) || isNullOrNan(item.temperature));
+        });
+
+        // Compute distribution
+        const dist = {};
+        cleanData.forEach(item => {
+            const type = item.equipment_type || 'Unknown';
+            dist[type] = (dist[type] || 0) + 1;
+        });
+        type_distribution = dist;
+    }
+
+    if (!type_distribution || Object.keys(type_distribution).length === 0) return null;
+
+    // Handle 'null' or 'None' keys from backend if they exist
+    const labels = Object.keys(type_distribution).map(k => (k === 'null' || k === 'None' || !k) ? 'Unknown' : k);
     const dataValues = Object.values(type_distribution);
 
     const barData = {

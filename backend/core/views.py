@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
@@ -24,6 +25,23 @@ class FileUploadView(APIView):
             required_cols = ['Equipment Name', 'Type', 'Flowrate', 'Pressure', 'Temperature']
             if not all(col in df.columns for col in required_cols):
                  return Response({"error": f"Missing columns. Required: {required_cols}"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Treat empty strings and whitespace as NaN first
+            df.replace(r'^\s*$', np.nan, regex=True, inplace=True)
+            
+            # Replace ALL NaNs (including those we just made) with None for database compatibility
+            df = df.where(pd.notnull(df), None)
+
+            # Check for null values
+            missing_values_count = df.isnull().sum().sum()
+            confirmed = request.query_params.get('confirmed', 'false').lower() == 'true'
+
+            if missing_values_count > 0 and not confirmed:
+                return Response({
+                    "error": f"Found {missing_values_count} missing values. Please confirm upload.",
+                    "missing_values_count": int(missing_values_count),
+                    "requires_confirmation": True
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             with transaction.atomic():
                 # Manage History Limit (Keep last 5)
@@ -55,20 +73,27 @@ class FileUploadView(APIView):
                 EquipmentData.objects.bulk_create(equipment_list)
 
             # Calculate Summary
+            # Calculate Summary (Exclude null rows)
+            # Filter rows where ANY required field is None
+            
+            clean_df = df.dropna(subset=['Equipment Name', 'Type', 'Flowrate', 'Pressure', 'Temperature'])
+            
             summary = {
                 "total_count": len(df),
+                "valid_count": len(clean_df),
                 "averages": {
-                    "flowrate": df['Flowrate'].mean(),
-                    "pressure": df['Pressure'].mean(),
-                    "temperature": df['Temperature'].mean()
+                    "flowrate": clean_df['Flowrate'].mean() if not clean_df.empty else 0,
+                    "pressure": clean_df['Pressure'].mean() if not clean_df.empty else 0,
+                    "temperature": clean_df['Temperature'].mean() if not clean_df.empty else 0
                 },
-                "type_distribution": df['Type'].value_counts().to_dict()
+                "type_distribution": clean_df['Type'].value_counts().to_dict()
             }
             
             return Response({
                 "message": "File processed successfully",
                 "upload_id": history.id,
-                "summary": summary
+                "summary": summary,
+                "missing_values_count": int(missing_values_count)
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
@@ -90,21 +115,27 @@ class UploadDataView(APIView):
             # But querying DB is safer.
             
             total_count = data.count()
-            avg_flow = data.aggregate(models.Avg('flowrate'))['flowrate__avg']
-            avg_press = data.aggregate(models.Avg('pressure'))['pressure__avg']
-            avg_temp = data.aggregate(models.Avg('temperature'))['temperature__avg']
             
-            # Type distribution
+            # Filter for valid rows only (Exclude nulls in ANY field)
+            clean_data = data.exclude(equipment_name__isnull=True).exclude(equipment_type__isnull=True).exclude(flowrate__isnull=True).exclude(pressure__isnull=True).exclude(temperature__isnull=True)
+            valid_count = clean_data.count()
+
+            avg_flow = clean_data.aggregate(models.Avg('flowrate'))['flowrate__avg']
+            avg_press = clean_data.aggregate(models.Avg('pressure'))['pressure__avg']
+            avg_temp = clean_data.aggregate(models.Avg('temperature'))['temperature__avg']
+            
+            # Type distribution (Valid rows only)
             from django.db.models import Count
-            type_dist = list(data.values('equipment_type').annotate(count=Count('equipment_type')))
+            type_dist = list(clean_data.values('equipment_type').annotate(count=Count('equipment_type')))
             dist_dict = {item['equipment_type']: item['count'] for item in type_dist}
 
             summary = {
                 "total_count": total_count,
+                "valid_count": valid_count,
                 "averages": {
-                    "flowrate": avg_flow,
-                    "pressure": avg_press,
-                    "temperature": avg_temp
+                    "flowrate": avg_flow or 0,
+                    "pressure": avg_press or 0,
+                    "temperature": avg_temp or 0
                 },
                 "type_distribution": dist_dict
             }
@@ -168,25 +199,56 @@ class PDFReportView(APIView):
             elements.append(Spacer(1, 0.2 * inch))
 
             # --- Summary Section ---
+            # Re-calculate clean stats for report
+            # Exclude NULLs AND persistent 'nan' strings
+            clean_data = data.exclude(equipment_name__isnull=True)\
+                             .exclude(equipment_type__isnull=True)\
+                             .exclude(flowrate__isnull=True)\
+                             .exclude(pressure__isnull=True)\
+                             .exclude(temperature__isnull=True)\
+                             .exclude(equipment_name__iexact='nan')\
+                             .exclude(equipment_type__iexact='nan')
+            
             total_count = data.count()
-            avg_flow = data.aggregate(models.Avg('flowrate'))['flowrate__avg'] or 0
-            avg_press = data.aggregate(models.Avg('pressure'))['pressure__avg'] or 0
-            avg_temp = data.aggregate(models.Avg('temperature'))['temperature__avg'] or 0
+            valid_count = clean_data.count()
+            missing_count = total_count - valid_count
+            
+            # --- Warning Section ---
+            if missing_count > 0:
+                warning_style = ParagraphStyle(
+                    'WarningStyle',
+                    parent=styles['Normal'],
+                    fontSize=10,
+                    textColor=colors.HexColor('#991b1b'), # Red-800
+                    backColor=colors.HexColor('#fee2e2'), # Red-100
+                    borderColor=colors.HexColor('#f87171'), # Red-400
+                    borderWidth=1,
+                    borderPadding=10,
+                    spaceAfter=20,
+                    alignment=TA_CENTER
+                )
+                warning_text = f"<b>⚠️ WARNING:</b> This report excludes <b>{missing_count}</b> rows containing missing values (nulls or empty fields).<br/>These rows are highlighted in red in the data table below."
+                elements.append(Paragraph(warning_text, warning_style))
+
+            
+            avg_flow = clean_data.aggregate(models.Avg('flowrate'))['flowrate__avg'] or 0
+            avg_press = clean_data.aggregate(models.Avg('pressure'))['pressure__avg'] or 0
+            avg_temp = clean_data.aggregate(models.Avg('temperature'))['temperature__avg'] or 0
             
             summary_data = [
-                ['Total Records', 'Avg Flowrate', 'Avg Pressure', 'Avg Temp'],
-                [str(total_count), f"{avg_flow:.2f}", f"{avg_press:.2f}", f"{avg_temp:.2f}"]
+                ['Total Records', 'Valid Records', 'Avg Flow', 'Avg Press', 'Avg Temp'],
+                [str(total_count), str(valid_count), f"{avg_flow:.2f}", f"{avg_press:.2f}", f"{avg_temp:.2f}"]
             ]
             
             # FIT TO PAGE: 8.5 width - 2 inch margins = 6.5 inch max
-            # Summary: 1.5 * 4 = 6.0 inches
-            t_summary = Table(summary_data, colWidths=[1.5*inch, 1.5*inch, 1.5*inch, 1.5*inch])
+            # Summary: 1.3 * 5 = 6.5 inches
+            t_summary = Table(summary_data, colWidths=[1.3*inch, 1.3*inch, 1.3*inch, 1.3*inch, 1.3*inch])
             t_summary.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0fdfa')), # Teal-50
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#0f766e')), # Teal-700
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('FONTSIZE', (0, 0), (-1, -1), 9),
                 ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
                 ('TOPPADDING', (0, 0), (-1, 0), 8),
                 ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#ccfbf1')), # Teal-100
@@ -200,18 +262,46 @@ class PDFReportView(APIView):
             table_data = [['Equipment Name', 'Type', 'Flowrate', 'Pressure', 'Temp']]
             
             # Limit rows for PDF performance if needed, or implement pagination (SimpleDocTemplate handles pagination automatically)
-            for item in data:
+            row_styles = []
+            for i, item in enumerate(data):
+                is_null_row = False
+                
+                # Check Name and Type
+                # Helper to check for null or 'nan' string
+                def is_null_or_nan(val):
+                    return val is None or str(val).lower() == 'nan'
+
+                if is_null_or_nan(item.equipment_name): is_null_row = True
+                name_str = str(item.equipment_name)[:30] if not is_null_or_nan(item.equipment_name) else "N/A"
+                
+                if is_null_or_nan(item.equipment_type): is_null_row = True
+                type_str = str(item.equipment_type) if not is_null_or_nan(item.equipment_type) else "N/A"
+                
+                if item.flowrate is None: is_null_row = True
+                flow = f"{item.flowrate:.2f}" if item.flowrate is not None else "N/A"
+                
+                if item.pressure is None: is_null_row = True
+                press = f"{item.pressure:.2f}" if item.pressure is not None else "N/A"
+                
+                if item.temperature is None: is_null_row = True
+                temp = f"{item.temperature:.2f}" if item.temperature is not None else "N/A"
+
                 table_data.append([
-                    str(item.equipment_name)[:30], # Truncate long names
-                    str(item.equipment_type),
-                    f"{item.flowrate:.2f}",
-                    f"{item.pressure:.2f}",
-                    f"{item.temperature:.2f}"
+                    name_str,
+                    type_str,
+                    flow,
+                    press,
+                    temp
                 ])
+                
+                # Check for nulls and add style
+                if is_null_row:
+                    # i + 1 because row 0 is header
+                    row_styles.append(('BACKGROUND', (0, i+1), (-1, i+1), colors.HexColor('#fee2e2'))) # Red-100 for warning
 
             # FIT TO PAGE: 2.0 + 1.2 + 1.0 + 1.0 + 1.0 = 6.2 inches
             t = Table(table_data, colWidths=[2.0*inch, 1.2*inch, 1*inch, 1*inch, 1*inch], repeatRows=1)
-            t.setStyle(TableStyle([
+            t_style = TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0f766e')), # Teal-700 Header
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
@@ -222,8 +312,13 @@ class PDFReportView(APIView):
                 ('TOPPADDING', (0, 0), (-1, 0), 10),
                 ('BACKGROUND', (0, 1), (-1, -1), colors.white),
                 ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')), # Slate-200
-                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]) # Zebra striping (Slate-50)
-            ]))
+            ])
+            
+            # Apply dynamic row styles
+            for style in row_styles:
+                t_style.add(*style)
+                
+            t.setStyle(t_style)
             
             elements.append(t)
             

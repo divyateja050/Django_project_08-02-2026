@@ -52,7 +52,32 @@ const FileUpload = ({ onUploadSuccess }) => {
             setFile(null); // Reset file after success
             onUploadSuccess(response.data);
         } catch (error) {
-            toast.error('Upload failed. Please try again.', { id: loadingToast });
+            console.error("Upload error:", error);
+            if (error.response && error.response.status === 400 && error.response.data.requires_confirmation) {
+                toast.dismiss(loadingToast);
+                const count = error.response.data.missing_values_count;
+                const confirmed = window.confirm(`⚠️ Warning: ${count} missing values detected.\n\nDo you want to proceed with the upload? Missing values will be stored as empty.`);
+
+                if (confirmed) {
+                    const retryToast = toast.loading('Uploading with confirmed missing values...');
+                    try {
+                        const response = await api.post('upload/?confirmed=true', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' },
+                        });
+                        toast.success('Upload successful!', { id: retryToast });
+                        setFile(null);
+                        onUploadSuccess(response.data);
+                    } catch (retryError) {
+                        console.error("Retry upload error:", retryError);
+                        toast.error('Upload failed even after confirmation.', { id: retryToast });
+                    }
+                } else {
+                    toast.error('Upload cancelled.', { duration: 3000 });
+                }
+            } else {
+                const errorMsg = error.response?.data?.error || 'Upload failed. Please try again.';
+                toast.error(errorMsg, { id: loadingToast });
+            }
         } finally {
             setUploading(false);
         }
