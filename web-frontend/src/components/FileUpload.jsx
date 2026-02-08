@@ -67,14 +67,15 @@ const FileUpload = ({ onUploadSuccess }) => {
             </div>
 
             <div
-                className={`relative border-2 border-dashed rounded-xl p-8 transition-all duration-200 ease-in-out text-center ${dragActive
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                className={`relative border-2 border-dashed rounded-xl p-8 transition-all duration-200 ease-in-out text-center cursor-pointer group ${dragActive
+                    ? 'border-primary-500 bg-primary-50'
+                    : 'border-slate-200 hover:border-primary-400 hover:bg-slate-50'
                     }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
+                onClick={() => inputRef.current?.click()}
             >
                 <input
                     ref={inputRef}
@@ -84,38 +85,38 @@ const FileUpload = ({ onUploadSuccess }) => {
                     accept=".csv"
                 />
 
-                <div className="flex flex-col items-center gap-3">
-                    <div className={`p-4 rounded-full ${dragActive ? 'bg-primary-100' : 'bg-gray-100'}`}>
+                <div className="flex flex-col items-center gap-4">
+                    <div className={`p-4 rounded-full transition-colors ${dragActive ? 'bg-primary-100' : 'bg-slate-100 group-hover:bg-primary-50'}`}>
                         {file ? (
-                            <File className={`h-8 w-8 ${dragActive ? 'text-primary-600' : 'text-gray-500'}`} />
+                            <File className={`h-8 w-8 ${dragActive ? 'text-primary-600' : 'text-slate-400 group-hover:text-primary-500'}`} />
                         ) : (
-                            <UploadCloud className={`h-8 w-8 ${dragActive ? 'text-primary-600' : 'text-gray-400'}`} />
+                            <UploadCloud className={`h-8 w-8 ${dragActive ? 'text-primary-600' : 'text-slate-400 group-hover:text-primary-500'}`} />
                         )}
                     </div>
 
                     <div>
                         {file ? (
-                            <p className="font-medium text-gray-900">{file.name}</p>
+                            <div className="text-center">
+                                <p className="font-medium text-slate-900">{file.name}</p>
+                                <p className="text-xs text-slate-500 mt-1">{(file.size / 1024).toFixed(1)} KB</p>
+                            </div>
                         ) : (
                             <div className="space-y-1">
-                                <p className="font-medium text-gray-900">
-                                    <span
-                                        onClick={() => inputRef.current?.click()}
-                                        className="text-primary-600 hover:underline cursor-pointer"
-                                    >
-                                        Click to upload
-                                    </span>
-                                    {' '}or drag and drop
+                                <p className="font-medium text-slate-700 group-hover:text-primary-700 transition-colors">
+                                    Click to select or drag and drop
                                 </p>
-                                <p className="text-xs text-gray-500">CSV files only (max 10MB)</p>
+                                <p className="text-xs text-slate-400">CSV files only (max 10MB)</p>
                             </div>
                         )}
                     </div>
 
                     {file && (
-                        <div className="flex gap-3 mt-2">
+                        <div className="flex gap-3 mt-2" onClick={(e) => e.stopPropagation()}>
                             <Button
-                                onClick={() => setFile(null)}
+                                onClick={() => {
+                                    setFile(null);
+                                    if (inputRef.current) inputRef.current.value = "";
+                                }}
                                 variant="secondary"
                                 className="text-sm py-1.5 h-auto text-red-500 hover:text-red-700 hover:bg-red-50 border-red-100"
                             >
@@ -124,9 +125,9 @@ const FileUpload = ({ onUploadSuccess }) => {
                             <Button
                                 onClick={handleUpload}
                                 disabled={uploading}
-                                className="text-sm py-1.5 h-auto"
+                                className="text-sm py-1.5 h-auto bg-teal-600 hover:bg-teal-700 text-white"
                             >
-                                {uploading ? 'Uploading...' : 'Upload File'}
+                                {uploading ? 'Uploading...' : 'Upload Analysis'}
                             </Button>
                         </div>
                     )}
@@ -135,8 +136,8 @@ const FileUpload = ({ onUploadSuccess }) => {
 
             {message && (
                 <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 text-sm ${message.includes('success')
-                        ? 'bg-green-50 text-green-700 border border-green-100'
-                        : 'bg-red-50 text-red-700 border border-red-100'
+                    ? 'bg-green-50 text-green-700 border border-green-100'
+                    : 'bg-red-50 text-red-700 border border-red-100'
                     }`}>
                     {message.includes('success') ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
                     {message}
