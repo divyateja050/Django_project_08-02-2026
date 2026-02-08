@@ -1,36 +1,83 @@
 {
   "name": "chemicalviz-desktop",
-  "version": "1.0.0",
-  "description": "ChemicalViz Desktop Application",
+  "version": "1.4.1",
+  "description": "ChemicalViz Desktop Application - Electron wrapper for ChemicalViz web app",
   "main": "electron-main.js",
+  "author": "Divya Teja",
+  "license": "MIT",
   "scripts": {
     "start": "electron .",
     "dev": "set NODE_ENV=development&& electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
   },
   "keywords": [
     "chemicalviz",
     "analytics",
-    "desktop"
+    "desktop",
+    "electron",
+    "chemical-equipment",
+    "data-visualization"
   ],
-  "author": "",
-  "license": "ISC",
   "build": {
     "appId": "com.chemicalviz.desktop",
     "productName": "ChemicalViz",
     "directories": {
-      "buildResources": "../web-frontend/public"
+      "buildResources": "../web-frontend/public",
+      "output": "dist"
     },
+    "files": [
+      "electron-main.js",
+      "icon.svg",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../web-frontend/dist",
+        "to": "app",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "win": {
       "target": [
-        "nsis"
+        "nsis",
+        "portable"
       ],
-      "icon": "../web-frontend/public/chemical_viz_icon.ico"
+      "icon": "icon.svg"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "icon.svg",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "icon.svg",
+      "category": "Utility"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     }
   },
   "devDependencies": {
     "electron": "^40.2.1",
-    "electron-icon-builder": "^2.0.1",
-    "png-to-ico": "^3.0.1"
+    "electron-builder": "^24.13.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }

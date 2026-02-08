@@ -5,10 +5,16 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    target: 'chrome87', // Match PyQt5's Chromium version roughly
     outDir: 'dist',
+    // Modern browser target (works with Electron and modern browsers)
+    target: 'esnext',
+    minify: 'esbuild',
+    sourcemap: false
   },
   server: {
-    host: true, // Listen on all addresses
+    host: true, // Listen on all addresses (0.0.0.0)
+    port: 5173,
+    strictPort: false,
+    open: false
   }
 })
